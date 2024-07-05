@@ -1,7 +1,8 @@
 from pyppeteer import launch
 import asyncio
 
-async def get_mailinator_code(email):
+
+async def get_mailinator_code(browser, page, email):
     """
     Retrieves the verification code from Mailinator for the given email address.
 
@@ -14,13 +15,8 @@ async def get_mailinator_code(email):
     try:
         username = email.split("@")[0]
         url = f"https://www.mailinator.com/v4/public/inboxes.jsp?to={username}"
-
-        browser = await launch(headless=False)  # Launch browser
-        page = await browser.newPage()
-
         await page.goto(url)  # Navigate to Mailinator inbox
         await asyncio.sleep(4)  # Adjust sleep time as needed for page load
-
         # Click the email item
         await page.waitForXPath(
             "/html/body/div/main/div[2]/div[3]/div/div[4]/div/div/table/tbody/tr/td[3]"
@@ -33,9 +29,9 @@ async def get_mailinator_code(email):
 
         # Get the element containing the code
         code_element = await page.waitForSelector(
-            'div.fz-20.ff-futura-demi.gray-color.ng-binding'
+            "div.fz-20.ff-futura-demi.gray-color.ng-binding"
         )
-        code_text = await code_element.evaluate('(element) => element.textContent')
+        code_text = await code_element.evaluate("(element) => element.textContent")
 
         # Extract the code
         elements = code_text.split()

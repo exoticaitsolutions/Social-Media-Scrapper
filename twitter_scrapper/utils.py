@@ -1,14 +1,18 @@
+import json
 import os
-import platform
 import random
 import asyncio
-import shutil
-from pyppeteer import launch
+from typing import Dict, Optional
+from django.conf import settings
+from django.http import JsonResponse
 import time
-from .email import *
-
+from django.utils import timezone
+from .webdriver import InitializePuppeteer
+from .email import get_mailinator_code
+from django.core.cache import cache
+from rest_framework import status
 HEADLESS = False
-
+init_puppeteers = InitializePuppeteer()
 USER_CREDENTIALS = [
     {
         "full name": "Melvin Barber",
@@ -79,79 +83,29 @@ USER_CREDENTIALS = [
 ]
 
 
-def find_chrome_executable():
-    """
-    Finds the path to the Google Chrome executable based on
-    the current operating system.
-    Returns:
-        str or None: Path to the Chrome executable if found,
-        or None if not found.
-    Raises:
-        None
-    Notes:
-        - On Windows, it checks common installation paths under Program Files
-        and Program Files (x86).
-        - On Linux, it checks for 'google-chrome' and 'google-chrome-stable'
-         in the system PATH.
-    """
-    system = platform.system()
-    print(f"system : {system}")
-    if system == "Windows":
-        chrome_paths = [
-            os.path.join(
-                os.environ["ProgramFiles"],
-                "Google",
-                "Chrome",
-                "Application",
-                "chrome.exe",
-            ),
-            os.path.join(
-                os.environ["ProgramFiles(x86)"],
-                "Google",
-                "Chrome",
-                "Application",
-                "chrome.exe",
-            ),
-        ]
-        for path in chrome_paths:
-            if os.path.exists(path):
-                return path
-    elif system == "Linux":
-        chrome_path = shutil.which("google-chrome")
-        if chrome_path is None:
-            chrome_path = shutil.which("google-chrome-stable")
-        return chrome_path
-    return None
+
 
 async def login():
     """
     Logs into Twitter using a randomly selected set of credentials.
 
-    This function performs the following steps:
-    1. Launches a new browser instance.
-    2. Navigates to the Twitter login page.
-    3. Enters the username and password from a randomly selected credential set.
-    4. Handles potential authentication challenges, including entering a verification code.
-
     Returns:
         tuple: A tuple containing the browser and page objects for further use.
-
-    Raises:
-        Exception: If an error occurs during the login process.
     """
     start_time = time.time()
     credentials = random.choice(USER_CREDENTIALS)
     username_value = credentials["username"]
     password_value = credentials["password"]
     email = credentials["email"]
-    executable_path = find_chrome_executable() # Adjust path to Chrome executable
-    browser = await launch(
-        headless=HEADLESS,
-        executablePath=executable_path,
-        defaultViewport=None,
-        args=["--start-maximized"],
-    )
-    page = await browser.newPage()
+    browser, page = await (init_puppeteers.initialize_paid_proxy() if settings.PAIDPROXY else init_puppeteers.initialize_free_proxy()) 
+    # executable_path = find_chrome_executable()
+    # browser = await launch(
+    #     headless=HEADLESS,
+    #     executablePath=executable_path,
+    #     defaultViewport=None,
+    #     args=["--start-maximized"],
+    # )
+    # page = await browser.newPage()
 
     try:
         await page.goto(
@@ -159,67 +113,143 @@ async def login():
         )
         await asyncio.sleep(4)
 
-        # Enter username
+        # Enter username and proceed
         await page.click('input[name="text"]')
         await page.type('input[name="text"]', username_value)
         await page.waitForXPath("//span[contains(text(),'Next')]")
         next_button = await page.xpath("//span[contains(text(),'Next')]")
         await next_button[0].click()
         print("Next Clicked Successfully")
+        await asyncio.sleep(5)
+
+        # Handle email popup if present
+        try:
+            print("---------")
+            # await page.waitForXPath('//input[@data-testid="ocfEnterTextTextInput"]')
+            email_popup = await page.xpath(
+                '//input[@data-testid="ocfEnterTextTextInput"]'
+            )
+            await email_popup[0].click()
+            await email_popup[0].type(email)
+            await page.waitForXPath("//span[contains(text(),'Next')]")
+            next_button = await page.xpath("//span[contains(text(),'Next')]")
+            await next_button[0].click()
+            await asyncio.sleep(2)
+        except Exception as e:
+            print(f"Email popup handling failed: {str(e)}")
 
         # Enter password
+        print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
         await page.waitForXPath("//input[@name='password']")
         password_input = await page.xpath("//input[@name='password']")
         await password_input[0].type(password_value)
         print("Password filled Successfully")
 
-        # Click login
+        # Click login button
         await page.waitForXPath("//span[contains(text(),'Log in')]")
         log_in_button = await page.xpath("//span[contains(text(),'Log in')]")
         await log_in_button[0].click()
         print("Log in clicked Successfully")
         await asyncio.sleep(4)
+
+        # Handle verification code if prompted
         try:
             code_input_box = await page.waitForSelector(
                 'input[inputmode="text"]', timeout=10000
             )
             print("Code input box found for authentication")
-            code = await get_mailinator_code(
-                email
-            )  # Fetch verification code from Mailinator
+            code = await get_mailinator_code(browser, page, email)  # Fetch verification code
             await code_input_box.type(code)  # Enter the verification code
-            await asyncio.sleep(2)  # Optional sleep to simulate human interaction
+            await asyncio.sleep(2)
             print("Confirmation code written")
 
             await page.click("div.css-175oi2r.r-b9tw7p button")
-            await asyncio.sleep(5)  # Optional sleep for navigation
+            await asyncio.sleep(5)
 
-        except:
-            # If code input box is not found, handle the scenario where email input
-            # box is displayed for authentication
-            email_input_box = await page.waitForSelector(
-                'input[inputmode="email"]', timeout=10000
-            )
-            print("Email input box found for authentication")
-            await email_input_box.type(email)  # Enter the email address
-            await asyncio.sleep(2)  # Optional sleep to simulate human interaction
-
-            # Click the next button to proceed with authentication
-            await page.click("div.css-175oi2r.r-b9tw7p button")
-            await asyncio.sleep(5)  # Optional sleep for navigation
-        finally:
-            # Return browser and page objects for further use if needed
-            login_process_time = time.time()
-            total_time = login_process_time - start_time
-            print(f"Login execution time: {total_time:.2f} seconds")
-            return browser, page
+        except Exception as e:
+            print(f"Verification code handling failed: {str(e)}")
 
     except Exception as e:
         print(f"An error occurred during login process: {str(e)}")
 
     finally:
-        # Return browser and page objects for further use if needed
-        login_process_time = time.time()
-        total_time = login_process_time - start_time
-        print(f"Login execution time: {total_time:.2f} seconds")
+        login_process_time = time.time() - start_time
+        print(f"Login execution time: {login_process_time:.2f} seconds")
         return browser, page
+
+
+def set_cache(key, value, timeout=None):
+    """
+    Set a value in the cache.
+    :param timeout:
+    :param key: Cache key
+    :param value: Value to cache    :param timeout:  timeout in seconds. Defaults to the default timeout if None.
+    """
+    print(
+        "Setting the key = ",
+        key,
+        " and value = ",
+        value,
+        " for timeout = ",
+        timeout,
+        " in Redis cache.",
+    )
+    cache.set(key, value, timeout)
+
+
+def get_cache(key, default=None):
+    return cache.get(key, default)
+
+
+
+
+def message_json_response( code: int, error_type: str, error_message: str, data: Optional[Dict] = None,total_time = None) -> JsonResponse:
+    """
+    Create a JSON response with the provided code, error type, error message, and optional data.
+    Parameters:
+    - code (int): The HTTP status code to be returned.
+    - error_type (str): The type of error.
+    - error_message (str): The error message.
+    - data (dict, optional): Additional data to include in the response.
+    Returns:
+    - JsonResponse: A JSON response containing the provided data and status code.
+    """
+    response_data = {
+        "code": code,
+        "type": error_type,
+        "message": error_message,
+    }
+    if data:
+        response_data["data"] = data
+
+    return JsonResponse(response_data, status=code, json_dumps_params=dict(indent=2))
+
+
+def save_data_in_directory(folder_name, file_name, json_data: dict):
+    """
+    Saves JSON data in a specified directory with the provided file name.
+    If the specified directory does not exist, it creates the directory.
+    Parameters:
+    - folder_name (str): The name of the directory where the data will be saved.
+    - file_name (str): The name of the file to be created (without the extension).
+    - json_data (dict): The JSON data to be saved.
+    Returns:
+    - None
+    Example:
+    json_data = {"key": "value"}
+    save_data_in_directory("my_folder", "my_file", json_data)
+    This will create a file named "my_file.json" inside the "my_folder" directory and save the JSON data in it.
+    """
+    if not os.path.exists(folder_name):
+        os.makedirs(folder_name)
+    file_path = os.path.join(folder_name, f"{file_name}.json")
+    print(file_path)
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(json_data, f, ensure_ascii=False, indent=4)
+    return True
+
+def save_data_and_return(data, data_append):
+    save_data_in_directory(f"json_Response/{timezone.now().date()}/", data_append, data)
+    return message_json_response(
+        status.HTTP_200_OK, "success", "Tweets retrieved successfully", data=data
+    )

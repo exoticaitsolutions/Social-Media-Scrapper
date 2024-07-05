@@ -1,19 +1,21 @@
+import time
 from django.http import JsonResponse
 from adrf.decorators import api_view
 import asyncio
 import logging
 from pyppeteer.errors import NetworkError, PageError
-import time
+from django.utils import timezone
 import json
 import re
-from .utils import login
+from .utils import login, set_cache
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-NUMBER_OF_POSTS = 3
+NUMBER_OF_POSTS = 30
 NUMBER_OF_COMMENTS = 3
 MAX_THREAD_COUNT = 5
 MAX_EXCEPTION_RETRIES = 3
+CACHE_TIMEOUT = 60 * 15
 
 
 async def retry_exception(
@@ -34,7 +36,7 @@ async def retry_exception(
         )
         return JsonResponse({"error": "Element not found"})
 
-async def fetch_tweets_by_profile(profile_name, retry_count=0):
+async def fetch_tweets_by_profile(profile_name, retry_count=0, full_url=None):
     try:
         browser, page = await login()
         start_time = time.time()
@@ -145,8 +147,8 @@ async def fetch_tweets_by_profile(profile_name, retry_count=0):
         end_time = time.time()
         total_time = end_time - start_time  # Calculate the total time of execution
         print(f"Total execution time: {total_time:.2f} seconds")
-
         await browser.close()
+        set_cache(full_url, twitter_data, timeout=CACHE_TIMEOUT)
         return twitter_data
 
     except (NetworkError, PageError) as e:
@@ -155,6 +157,7 @@ async def fetch_tweets_by_profile(profile_name, retry_count=0):
         return await retry_exception(
             fetch_tweets_by_profile, profile_name, retry_count, str(e)
         )
+        
     except Exception as e:
         print(f"An unexpected error occurred: {str(e)}")
         await browser.close()
@@ -306,9 +309,8 @@ async def fetch_trending_hashtags(request, retry_count=0):
         await page.waitForXPath('//*[@data-testid="cellInnerDiv"]')
         # Scroll up by 30%
         await page.evaluate("window.scrollBy(0, -document.body.scrollHeight * 0.3);")
-        await asyncio.sleep(3)  # Wait for a bit after scrolling
+        await asyncio.sleep(3) 
 
-        # Scroll down to load more content
         last_height = await page.evaluate("() => document.body.scrollHeight")
         while True:
             await page.evaluate("window.scrollBy(0, 800);")
@@ -323,36 +325,22 @@ async def fetch_trending_hashtags(request, retry_count=0):
         trending_topics_elements = await page.xpath('//*[@data-testid="cellInnerDiv"]')
         print(f"Found {len(trending_topics_elements)} trending topics elements.")
 
-        for element in trending_topics_elements:
+        for index, element in enumerate(trending_topics_elements, start=1):
             try:
                 text = await (await element.getProperty("textContent")).jsonValue()
-                text = text.strip()
-                print("----------- : "*88)
                 print("text : ", text)
-                if "·" in text:
-                    parts = text.split("·")
-                    if len(parts) >= 2:
-                        id = parts[0].strip()
-                        category = "Trending"
-                        trending = parts[1].strip()
-                        print("-------------------1111trending : ", trending)
-                        match = re.search(r"(\d[\d,.]*)", trending)
-                        if match:
-                            posts1 = match.group(1).replace(
-                                ",", ""
-                            )  # '51.3K' -> '51300'
-                            print("posts : ", posts1)
-                        else:
-                            posts1 = "0"
 
-                        item = {
-                            "id": id,
-                            "category": category,
-                            "type": "Trending",
-                            "trending": trending,
-                            "posts": posts1,
-                        }
-                        trending_topics.append(item)
+                parts = text.split("·")
+                if len(parts) == 3:
+                    category, trending, posts = parts
+                    trending_topic = {
+                        "id": str(index),
+                        "category": category.strip(),
+                        "type": "Trending",
+                        "trending": trending.strip(),
+                        "posts": posts.strip()
+                    }
+                    trending_topics.append(trending_topic)
             except Exception as e:
                 print(f"Error processing element: {str(e)}")
 
@@ -361,7 +349,7 @@ async def fetch_trending_hashtags(request, retry_count=0):
         if trending_topics:
             # Save trending topics data to a JSON file
             with open("trending_topics.json", "w") as json_file:
-                json.dump(trending_topics, json_file, indent=4)
+                json.dump({"data": trending_topics}, json_file, indent=4)
             print("Trending topics saved to trending_topics.json.")
         else:
             print("No valid trending topics found or extracted.")
@@ -384,7 +372,6 @@ async def fetch_trending_hashtags(request, retry_count=0):
             fetch_trending_hashtags, request, retry_count, str(e)
         )
 
-    
 async def scrape_twitter_data_by_post_id(user_name, post_ids, request, retry_count=0):
     browser, page = await login()
     try:
