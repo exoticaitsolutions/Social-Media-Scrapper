@@ -120,11 +120,10 @@ async def login():
         next_button = await page.xpath("//span[contains(text(),'Next')]")
         await next_button[0].click()
         print("Next Clicked Successfully")
-        await asyncio.sleep(5)
+        await asyncio.sleep(3)
 
         # Handle email popup if present
         try:
-            print("---------")
             # await page.waitForXPath('//input[@data-testid="ocfEnterTextTextInput"]')
             email_popup = await page.xpath(
                 '//input[@data-testid="ocfEnterTextTextInput"]'
@@ -139,7 +138,6 @@ async def login():
             print(f"Email popup handling failed: {str(e)}")
 
         # Enter password
-        print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
         await page.waitForXPath("//input[@name='password']")
         password_input = await page.xpath("//input[@name='password']")
         await password_input[0].type(password_value)
@@ -150,7 +148,7 @@ async def login():
         log_in_button = await page.xpath("//span[contains(text(),'Log in')]")
         await log_in_button[0].click()
         print("Log in clicked Successfully")
-        await asyncio.sleep(4)
+        await asyncio.sleep(3)
 
         # Handle verification code if prompted
         try:
