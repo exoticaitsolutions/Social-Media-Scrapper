@@ -7,6 +7,8 @@ from fake_useragent import UserAgent
 
 from pyppeteer import launch
 
+HEADLESS = True
+
 
 def find_chrome_executable():
     """
@@ -52,11 +54,10 @@ def find_chrome_executable():
         return chrome_path
     return None
 
-HEADLESS = False
 
 class InitializePuppeteer:
-    
-    async def initialize_paid_proxy(self):  # <-- Added 'self' as the first argument
+    @staticmethod
+    async def initialize_paid_proxy():  # <-- Added 'self' as the first argument
         print('Paid Proxy is Working')
         executable_path = find_chrome_executable()
         print(f"Using Chrome executable: {executable_path}")
@@ -71,28 +72,22 @@ class InitializePuppeteer:
         proxy_password = settings.PROXY_PASSWORD
         proxy_url = f"http://{proxy_username}:{proxy_password}@{proxy_host}:{proxy_port}"
         browser = await launch(
-        headless=HEADLESS,
-        executablePath=executable_path,
-        defaultViewport=None,
-        args=  [
-            '--no-sandbox',
-           f'--window-size={width},{height}',
-           f'--user-agent={user_agent}'
-           f'--proxy-server={proxy_url}'
-           "--start-maximized"
-        ]
-
-    )
-    #     browser = await launch({
-    #     'headless': HEADLESS,
-    #     "executablePath": executable_path,
-    #     'ignoreHTTPSErrors': True,
-        
-    # })
+            headless=HEADLESS,
+            executablePath=executable_path,
+            defaultViewport=None,
+            args=[
+                '--no-sandbox',
+                f'--window-size={width},{height}',
+                f'--user-agent={user_agent}'
+                f'--proxy-server={proxy_url}'
+                "--start-maximized"
+            ]
+        )
         page = await browser.newPage()
         return browser, page
 
-    async def initialize_free_proxy(self):  # <-- Added 'self' as the first argument
+    @staticmethod
+    async def initialize_free_proxy():  # <-- Added 'self' as the first argument
         print('Free Proxy is Working')
         executable_path = find_chrome_executable()
         print(f"Using Chrome executable: {executable_path}")
@@ -102,11 +97,17 @@ class InitializePuppeteer:
         height = random.randint(600, 1080)
         print(f"Using random window size: {width}x{height}")
         browser = await launch(
-        headless=HEADLESS,
-        executablePath=executable_path,
-        defaultViewport=None,
-        args=["--start-maximized"],
-    )
+            headless=HEADLESS,
+
+            executablePath=executable_path,
+            defaultViewport=None,
+            args=[
+                '--no-sandbox',
+                f'--window-size={width},{height}',
+                f'--user-agent={user_agent}'
+                "--start-maximized"
+            ]
+        )
 
         page = await browser.newPage()
         return browser, page
