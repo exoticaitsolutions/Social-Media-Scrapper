@@ -52,7 +52,7 @@ def find_chrome_executable():
         return chrome_path
     return None
 
-HEADLESS = False
+HEADLESS = True
 
 class InitializePuppeteer:
     
@@ -105,8 +105,16 @@ class InitializePuppeteer:
         headless=HEADLESS,
         executablePath=executable_path,
         defaultViewport=None,
-        args=["--start-maximized"],
+        # args=["--start-maximized"],
+        args=  [
+            '--no-sandbox',
+           f'--window-size={width},{height}',
+           f'--user-agent={user_agent}'
+        #    f'--proxy-server={proxy_url}'
+           "--start-maximized"
+        ]
     )
+        
 
         page = await browser.newPage()
         return browser, page

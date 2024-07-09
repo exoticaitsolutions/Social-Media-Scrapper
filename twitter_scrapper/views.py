@@ -125,9 +125,6 @@ async def get_twitter_data_by_post_id(request):
     twitter_data = await scrape_twitter_data_by_post_id(user_name, post_ids, request, full_url=full_url)
     return JsonResponse({"data": twitter_data})
 
-
-
-
 @api_view(["GET"])
 async def get_comments_of_tweet(request):
     """
