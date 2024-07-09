@@ -53,7 +53,7 @@ def find_chrome_executable():
             chrome_path = shutil.which("google-chrome-stable")
         return chrome_path
     return None
-
+  
 
 class InitializePuppeteer:
     @staticmethod
@@ -97,6 +97,7 @@ class InitializePuppeteer:
         height = random.randint(600, 1080)
         print(f"Using random window size: {width}x{height}")
         browser = await launch(
+
             headless=HEADLESS,
 
             executablePath=executable_path,
@@ -108,6 +109,5 @@ class InitializePuppeteer:
                 "--start-maximized"
             ]
         )
-
         page = await browser.newPage()
         return browser, page
