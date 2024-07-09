@@ -78,6 +78,8 @@ async def get_twitter_data_by_post_id(request):
         return save_data_and_return(response, 'trending_data') if success else message_json_response(
             status.HTTP_400_BAD_REQUEST, "error", 'Something Wrong'
         )
+
+
 @api_view(["GET"])
 async def get_comments_of_tweet_by_post_id(request):
     user_name = request.query_params.get("user_name")
