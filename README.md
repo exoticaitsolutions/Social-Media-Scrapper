@@ -42,15 +42,33 @@ Once the virtual environment is set up, you can install Django within it. Refer 
 
 ### Clone the Project
 ```bash
-git clone https://github.com/exoticaitsolutions/Twitter-Scrapping
+git clone https://github.com/exoticaitsolutions/Social-Media-Scrapper.git
 ```
 
 ## Navigate to the Project Directory
 
 ```bash
-  cd Twitter-Scrapping
+  cd Social-Media-Scrapper
 ```
+## Firslty Create the Virtual Environment
 
+# **_Windows:_**
+```
+py -m venv .venv
+```
+**Unix/MacOS:**
+```
+ python3 -m venv .venv
+```
+Then you have to activate the environment, by typing this command:
+Windows:
+```
+.venv\Scripts\activate.bat
+```
+Unix/MacOS:
+```
+source .venv/bin/activate
+```
 # Install Dependencies
 ### Using requirements.txt
 ```
@@ -103,8 +121,7 @@ PROXY_PASSWORD = PROXY_PASSWORD
 uvicorn social_media_scrapping.asgi:application
 ```
 
-***If you encounter the following error***
-ERROR: [Errno 98] error while attempting to bind on address ('127.0.0.1', 8000): address already in use
+***If you encounter the following error***: [Error 98] error while attempting to bind on address ('127.0.0.1,' 8000): address already in use
 
 ***Resolve the port conflict by terminating the process using port 8000***
 
