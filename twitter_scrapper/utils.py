@@ -11,10 +11,8 @@ from .webdriver import InitializePuppeteer
 from .email import get_mailinator_code
 from django.core.cache import cache
 from rest_framework import status
-
-HEADLESS = True
+HEADLESS = False
 init_puppeteers = InitializePuppeteer()
-TWITTER_LOGIN_URL = "https://twitter.com/i/flow/login"
 USER_CREDENTIALS = [
     {
         "full name": "Melvin Barber",
@@ -85,6 +83,8 @@ USER_CREDENTIALS = [
 ]
 
 
+
+
 async def login():
     """
     Logs into Twitter using a randomly selected set of credentials.
@@ -97,62 +97,60 @@ async def login():
     username_value = credentials["username"]
     password_value = credentials["password"]
     email = credentials["email"]
-    browser, page = await (
-        init_puppeteers.initialize_paid_proxy() if settings.PAIDPROXY else init_puppeteers.initialize_free_proxy())
+    browser, page = await (init_puppeteers.initialize_paid_proxy() if settings.PAIDPROXY else init_puppeteers.initialize_free_proxy()) 
+    # executable_path = find_chrome_executable()
+    # browser = await launch(
+    #     headless=HEADLESS,
+    #     executablePath=executable_path,
+    #     defaultViewport=None,
+    #     args=["--start-maximized"],
+    # )
+    # page = await browser.newPage()
+
     try:
-        print(f"Opening page from URL: {TWITTER_LOGIN_URL}")
         await page.goto(
-            TWITTER_LOGIN_URL, waitUntil="domcontentloaded"
+            "https://twitter.com/i/flow/login", waitUntil="domcontentloaded"
         )
-        await page.waitForNavigation()
-        print(f"opened  successfully")
         await asyncio.sleep(4)
+
         # Enter username and proceed
         await page.click('input[name="text"]')
-        print('username element is found clicked')
         await page.type('input[name="text"]', username_value)
-        print(f'username element is found and enter the value {username_value}')
-        # Next Button Element
-        # await page.waitForXPath("//span[contains(text(),'Next')]")
+        await page.waitForXPath("//span[contains(text(),'Next')]")
         next_button = await page.xpath("//span[contains(text(),'Next')]")
-        print(f'next_button element is found {next_button}')
         await next_button[0].click()
         print("Next Clicked Successfully")
         await asyncio.sleep(3)
+
         # Handle email popup if present
         try:
             # await page.waitForXPath('//input[@data-testid="ocfEnterTextTextInput"]')
             email_popup = await page.xpath(
                 '//input[@data-testid="ocfEnterTextTextInput"]'
             )
-            print('email_popup element is found')
             await email_popup[0].click()
             await email_popup[0].type(email)
-            print('email_popup element is found and email_popup is clicked')
-            # Next Element
-            # await page.waitForXPath("//span[contains(text(),'Next')]")
+            await page.waitForXPath("//span[contains(text(),'Next')]")
             next_button = await page.xpath("//span[contains(text(),'Next')]")
-            print('next_button element is found')
             await next_button[0].click()
-            print('next_button element is found and clicked')
             await asyncio.sleep(2)
         except Exception as e:
-            pass
-            # print(f"Email popup handling failed: {str(e)}")
-    #
+            print(f"Email popup handling failed: {str(e)}")
+
         # Enter password
         await page.waitForXPath("//input[@name='password']")
         password_input = await page.xpath("//input[@name='password']")
-        print(f'password_input element is found {password_input}')
         await password_input[0].type(password_value)
-        print(f"Password input element is found  and enter the "
-              f"secure password {'*' * len(password_value)}")
+        print("Password filled Successfully")
+
         # Click login button
         await page.waitForXPath("//span[contains(text(),'Log in')]")
         log_in_button = await page.xpath("//span[contains(text(),'Log in')]")
         await log_in_button[0].click()
         print("Log in clicked Successfully")
         await asyncio.sleep(3)
+
+        # Handle verification code if prompted
         try:
             code_input_box = await page.waitForSelector(
                 'input[inputmode="text"]', timeout=10000
@@ -162,8 +160,8 @@ async def login():
             await code_input_box.type(code)  # Enter the verification code
             await asyncio.sleep(2)
             print("Confirmation code written")
+
             await page.click("div.css-175oi2r.r-b9tw7p button")
-            print("Next Button Is Clicked Successfully")
             await asyncio.sleep(5)
 
         except Exception as e:
@@ -171,13 +169,11 @@ async def login():
 
     except Exception as e:
         print(f"An error occurred during login process: {str(e)}")
-        return False, f'login successfully with the {username_value}', browser, page
 
     finally:
         login_process_time = time.time() - start_time
         print(f"Login execution time: {login_process_time:.2f} seconds")
-        print(f'login successfully with the {username_value}')
-        return True, f'login successfully with the {username_value}', browser, page
+        return browser, page
 
 
 def set_cache(key, value, timeout=None):
@@ -185,8 +181,7 @@ def set_cache(key, value, timeout=None):
     Set a value in the cache.
     :param timeout:
     :param key: Cache key
-    :param value: Value to cache :param timeout:  timeout in seconds.
-    Default to the default timeout if None.
+    :param value: Value to cache    :param timeout:  timeout in seconds. Defaults to the default timeout if None.
     """
     print(
         "Setting the key = ",
@@ -204,7 +199,9 @@ def get_cache(key, default=None):
     return cache.get(key, default)
 
 
-def message_json_response(code: int, error_type: str, error_message: str, data: Optional[Dict] = None) -> JsonResponse:
+
+
+def message_json_response( code: int, error_type: str, error_message: str, data: Optional[Dict] = None,total_time = None) -> JsonResponse:
     """
     Create a JSON response with the provided code, error type, error message, and optional data.
     Parameters:
@@ -249,13 +246,8 @@ def save_data_in_directory(folder_name, file_name, json_data: dict):
         json.dump(json_data, f, ensure_ascii=False, indent=4)
     return True
 
-
 def save_data_and_return(data, data_append):
     save_data_in_directory(f"json_Response/{timezone.now().date()}/", data_append, data)
     return message_json_response(
-        status.HTTP_200_OK,
-        "success",
-        "Tweets retrieved successfully" if len(data) > 0 else "No tweets found",
-        data=[] if len(data) == 0 else data
+        status.HTTP_200_OK, "success", "Tweets retrieved successfully", data=data
     )
-

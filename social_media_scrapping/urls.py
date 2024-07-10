@@ -1,5 +1,5 @@
 """
-URL configuration for a social_media_scrapping project.
+URL configuration for social_media_scrapping project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/4.2/topics/http/urls/
@@ -19,5 +19,5 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('twitter_scrapper.urls'))
+    path('api/', include('twitter_scrapper.urls'))
 ]

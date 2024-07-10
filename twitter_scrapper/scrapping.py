@@ -355,60 +355,39 @@ async def fetch_trending_hashtags(request, retry_count=0, full_url=None):
 
         # Extract trending topics
         trending_topics = []
-        
-        trending_topics_elements = await page.xpath('//*[@data-testid="cellInnerDiv"]')
-        for element in trending_topics_elements:
-            data_list = await page.evaluate('(element) => element.textContent', element)
-            data_list = data_list.split("·")
-            print("text : ", data_list)
-            trending_topics.append(data_list)
-            print("-trending_topics : ", trending_topics)
-        def parse_entry(data):
-            id = data[0]
-            if len(data) == 2:
-                combined = data[1].strip()
-                category = ""
-            elif len(data) == 3:
-                category = data[1].strip()
-                combined = data[2].strip()
-            else:
-                return None
+        trending_topics_elements = await page.xpath('//*[@data-testid="trend"]')
+        elements1 = await page.xpath('//*[@id="react-root"]/div/div/div[2]/main/div/div/div/div[1]/div/div[3]/div/section/div/div/div[3]/div/div/div')
+        text_content1 = await page.evaluate('(element) => element.textContent', elements1[0])
+        print("---------------"*88)
+        print("text_content : ", text_content1)
 
-            # Extracting type and trending
-            type_trending_match = re.search(r'Trending(.+?)(?=\d|$)', combined)
-            if type_trending_match:
-                type_trending = type_trending_match.group(1).strip()
-                trending = type_trending.strip()
-                type = "Trending"
-            else:
-                trending = ""
-                type = ""
+        print(f"Found {len(trending_topics_elements)} trending topics elements.")
 
-            # Extracting posts with optional commas and decimals
-            posts_match = re.search(r'([\d,\.]+K?)\s*posts', combined, re.IGNORECASE)
-            if posts_match:
-                posts = posts_match.group(1).strip() + " posts"
-            else:
-                posts = ""
+        for index, element in enumerate(trending_topics_elements, start=1):
+            try:
+                text = await (await element.getProperty("textContent")).jsonValue()
+                print("text : ", text)
 
-            # Constructing the JSON object
-            result = {
-                "id": id,
-                "category": category,
-                "type": type,  # Assuming type is always "Trending"
-                "trending": trending,
-                "posts": posts
-            }
-            return result
-        parsed_data = [parse_entry(entry) for entry in trending_topics if parse_entry(entry) is not None]
-        set_cache(full_url, parsed_data, timeout=CACHE_TIMEOUT)
-        print("parsed_data : ", parsed_data)
-    
+                parts = text.split("·")
+                if len(parts) == 3:
+                    category, trending, posts = parts
+                    trending_topic = {
+                        "id": str(index),
+                        "category": category.strip(),
+                        "type": "Trending",
+                        "trending": trending.strip(),
+                        "posts": posts.strip()
+                    }
+                    trending_topics.append(trending_topic)
+            except Exception as e:
+                print(f"Error processing element: {str(e)}")
+
+        print("Trending topics extracted successfully")
 
         if trending_topics:
             # Save trending topics data to a JSON file
             with open("trending_topics.json", "w") as json_file:
-                json.dump({"data": parsed_data}, json_file, indent=4)
+                json.dump({"data": trending_topics}, json_file, indent=4)
             print("Trending topics saved to trending_topics.json.")
         else:
             print("No valid trending topics found or extracted.")
@@ -416,8 +395,7 @@ async def fetch_trending_hashtags(request, retry_count=0, full_url=None):
         total_time = end_time - start_time  # Calculate the total time of execution
         print(f"Total execution time: {total_time:.2f} seconds")
         await browser.close()
-        set_cache(full_url, parsed_data, timeout=CACHE_TIMEOUT)
-        return {"data": parsed_data}  # Return as a dictionary
+        return {"data": trending_topics}  # Return as a dictionary
 
     except (NetworkError, PageError) as e:
         print(f"Error interacting with Twitter: {str(e)}")
@@ -433,6 +411,9 @@ async def fetch_trending_hashtags(request, retry_count=0, full_url=None):
         )
 
 
+
+
+    
 async def scrape_twitter_data_by_post_id(user_name, post_ids, request, retry_count=0, full_url=None):
     """
     Scrapes Twitter data by post IDs.
