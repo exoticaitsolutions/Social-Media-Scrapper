@@ -30,7 +30,7 @@ async def fetch_tweets_by_hash_tag(request):
     full_url = request.build_absolute_uri()
     if not hashtag:
         return message_json_response(
-            status.HTTP_400_BAD_REQUEST, "error", 'Profile_name is required.'
+            status.HTTP_400_BAD_REQUEST, "error", 'Hashtag is required.'
         )
     cached_response = get_cache(full_url)
     if cached_response:
