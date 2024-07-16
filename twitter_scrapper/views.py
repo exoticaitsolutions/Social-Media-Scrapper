@@ -1,7 +1,6 @@
 from adrf.decorators import api_view
 from rest_framework import status
-from .scrapping import fetch_tweets_by_profile, fetch_tweets_by_hashtag, fetch_trending_hashtags, \
-    scrape_twitter_data_by_post_id
+from .scrapping import *
 from .utils import message_json_response, get_cache, save_data_and_return
 
 
@@ -98,7 +97,7 @@ async def get_comments_of_tweet_by_post_id(request):
     if cached_response:
         return save_data_and_return(cached_response, user_name)
     else:
-        success, response = await scrape_twitter_data_by_post_id(user_name, post_ids_str, 0, full_url)
+        success, response = await scrap_get_comments_of_tweet(user_name, post_ids_str, 0, full_url)
         return save_data_and_return(response, 'trending_data') if success else message_json_response(
             status.HTTP_400_BAD_REQUEST, "error", 'Something Wrong'
         )

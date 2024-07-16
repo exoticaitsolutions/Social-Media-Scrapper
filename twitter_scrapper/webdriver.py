@@ -9,7 +9,6 @@ from pyppeteer import launch
 
 HEADLESS = True
 
-
 def find_chrome_executable():
     """
     Finds the path to the Google Chrome executable based on

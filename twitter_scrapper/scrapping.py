@@ -13,7 +13,7 @@ from .utils import login, set_cache
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-NUMBER_OF_POSTS = 30
+NUMBER_OF_POSTS = 5
 NUMBER_OF_COMMENTS = 3
 MAX_THREAD_COUNT = 5
 MAX_EXCEPTION_RETRIES = 3
@@ -73,16 +73,16 @@ async def fetch_tweets_by_profile(profile_name, retry_count=0, full_url=None):
         print(f'login status  {message}')
         await page.waitForXPath("//input[@data-testid='SearchBox_Search_Input']")
         search_box = await page.xpath("//input[@data-testid='SearchBox_Search_Input']")
-        print(f'Search element is found {search_box}')
-        await asyncio.sleep(5)  # Wait for 2 seconds
+        print('Search element is found')
+        await asyncio.sleep(3)
         await search_box[0].type(profile_name)
-        print(f'Search element is found and type the values {profile_name}')
+        print('Search element is found and type the values')
         await search_box[0].press("Enter")
         print("Entered the subject and clicked Successfully !!")
-        await asyncio.sleep(4)
+        await asyncio.sleep(3)
         await page.waitForXPath("//span[contains(text(),'People')]")
         people_button = await page.xpath("//span[contains(text(),'People')]")
-        print(f'people element is found {people_button}')
+        print('people element is found')
         await people_button[0].click()
         print("Clicked on People Successfully !!")
         await asyncio.sleep(4)
@@ -92,12 +92,11 @@ async def fetch_tweets_by_profile(profile_name, retry_count=0, full_url=None):
         profile_button = await page.xpath(
             "//*[@id='react-root']/div/div/div[2]/main/div/div/div/div[1]/div/div[3]/section/div/div/div[1]/div/div/button/div/div[2]/div[1]/div[1]/div/div[1]/a/div/div[1]/span/span[1]"
         )
-        print(f'profile_button element is found {profile_button}')
+        print('profile_button element is found}')
         await profile_button[0].click()
         print("Clicked on Profile Successfully !!")
-        await asyncio.sleep(4)
+        await asyncio.sleep(3)
 
-        #     Scrapping the data
         UserTags, TimeStamps, Tweets, Replies, Retweets, Likes = [], [], [], [], [], []
         # Scrape tweets
         while len(Tweets) < NUMBER_OF_POSTS:
@@ -168,7 +167,7 @@ async def fetch_tweets_by_profile(profile_name, retry_count=0, full_url=None):
             }
             for i in range(len(UserTags))
         ]
-        await page.screenshot({'path': f'example_{random.randint(1, 100)}.png'})
+        # await page.screenshot({'path': f'example_{random.randint(1, 100)}.png'})
     except (NetworkError, PageError) as e:
         print(f"Error interacting with Twitter: {str(e)}")
         await browser.close()
@@ -198,7 +197,7 @@ async def fetch_tweets_by_hashtag(hashtag, retry_count=0, full_url=None):
         return success, message
     try:
         print(f'login status  {message}')
-        await page.screenshot({'path': f'example_{random.randint(1, 100)}.png'})
+        # await page.screenshot({'path': f'example_{random.randint(1, 100)}.png'})
         await page.waitForXPath("//input[@data-testid='SearchBox_Search_Input']")
         search_box = await page.xpath("//input[@data-testid='SearchBox_Search_Input']")
         print(f'Search element is found')
@@ -207,7 +206,7 @@ async def fetch_tweets_by_hashtag(hashtag, retry_count=0, full_url=None):
         print(f'Search element is found and type the values')
         await search_box[0].press("Enter")
         print("Entered the subject and clicked Successfully !!")
-        await asyncio.sleep(4)
+        await asyncio.sleep(3)
         UserTags, TimeStamps, Tweets, Replies, Retweets, Likes = [], [], [], [], [], []
         while len(Tweets) < NUMBER_OF_POSTS:
             await page.waitForXPath("//article[@data-testid='tweet']")
@@ -277,7 +276,7 @@ async def fetch_tweets_by_hashtag(hashtag, retry_count=0, full_url=None):
             }
             for i in range(len(UserTags))
         ]
-        await page.screenshot({'path': f'example_{random.randint(1, 100)}.png'})
+        # await page.screenshot({'path': f'example_{random.randint(1, 100)}.png'})
     except (NetworkError, PageError) as e:
         print(f"Error interacting with Twitter: {str(e)}")
         await browser.close()
@@ -317,7 +316,6 @@ async def fetch_trending_hashtags(trending_data, retry_count=0, full_url=None):
         await page.waitForXPath('//*[@data-testid="cellInnerDiv"]')
         # Scroll up by 30%
         await page.evaluate("window.scrollBy(0, -document.body.scrollHeight * 0.3);")
-        print('scrolling...............')
         await asyncio.sleep(3)
         last_height = await page.evaluate("() => document.body.scrollHeight")
         print(f'last_height element is found')
@@ -358,7 +356,7 @@ async def fetch_trending_hashtags(trending_data, retry_count=0, full_url=None):
                     "id": data[0],
                     "type": category,
                     "trending": type_trending_match.group(1).strip() if type_trending_match else "",
-                    "posts": posts_match.group(1).strip() + " posts" if posts_match else "",
+                    "posts": posts_match.group(1).strip() + " posts" if posts_match else "0",
                 }
                 twitter_data.append(item)
     except (NetworkError, PageError) as e:
@@ -380,7 +378,6 @@ async def fetch_trending_hashtags(trending_data, retry_count=0, full_url=None):
         print(f"Total execution time: {total_time:.2f} seconds")
     set_cache(full_url, twitter_data, timeout=CACHE_TIMEOUT)
     return True, twitter_data
-
 
 async def scrape_twitter_data_by_post_id(user_name, post_ids_str, retry_count=0, full_url=None):
     start_time = time.time()
@@ -428,9 +425,9 @@ async def scrape_twitter_data_by_post_id(user_name, post_ids_str, retry_count=0,
             timestamp = await page.evaluate(
                 '() => document.querySelector("time").getAttribute("datetime")'
             )
-            views_count = await page.evaluate(
-                '() => document.querySelector("span.css-1jxf684").textContent'
-            )
+            # views_count = await page.evaluate(
+            #     '() => document.querySelector("span.css-1jxf684").textContent'
+            # )
             # # Append data to tweet_data lis
             twitter_data.append(
                 {
@@ -442,7 +439,7 @@ async def scrape_twitter_data_by_post_id(user_name, post_ids_str, retry_count=0,
                     "repost_count": repost_count.strip() if repost_count else "0",
                     "bookmark_count": bookmark_count.strip() if bookmark_count else "0",
                     "timestamp": timestamp if timestamp else "",
-                    "views_count": views_count.strip() if views_count else "0",
+                    # "views_count": views_count.strip() if views_count else "0",
                 }
             )
     except (NetworkError, PageError) as e:
@@ -465,7 +462,6 @@ async def scrape_twitter_data_by_post_id(user_name, post_ids_str, retry_count=0,
     set_cache(full_url, twitter_data, timeout=CACHE_TIMEOUT)
     return True, twitter_data
 
-
 async def scrap_get_comments_of_tweet(user_name, post_ids_str, request, retry_count=0, full_url=None):
     start_time = time.time()
     twitter_data = []
@@ -473,7 +469,7 @@ async def scrap_get_comments_of_tweet(user_name, post_ids_str, request, retry_co
     if not success:
         return success, message
     try:
-        print(f'login status  {message}')
+        print('login status')
         post_ids = post_ids_str.split(",")
         post_ids = [post_id.strip() for post_id in post_ids]
         for post_id in post_ids:
@@ -488,8 +484,6 @@ async def scrap_get_comments_of_tweet(user_name, post_ids_str, request, retry_co
             await asyncio.sleep(4)
             while len(twitter_data) < NUMBER_OF_COMMENTS:
                 await page.evaluate("window.scrollBy(0, window.innerHeight * 0.5);")
-                print("Scrolled down 50% of the page.")
-                print('scrolling...................')
                 await asyncio.sleep(4)
                 elements = await page.xpath("//*[@role='article']")
                 print('element is found ')
@@ -497,6 +491,9 @@ async def scrap_get_comments_of_tweet(user_name, post_ids_str, request, retry_co
                     comment_text = await (
                         await element.getProperty("textContent")
                     ).jsonValue()
+                    print("----------------------")
+                    print("comment_text : ", comment_text)
+                    print("----------------------")
                     if comment_text:
                         comment_text = comment_text.strip()
                         name_match = re.search(r"^(.*?)(@[\w_]+)", comment_text)
@@ -516,15 +513,18 @@ async def scrap_get_comments_of_tweet(user_name, post_ids_str, request, retry_co
                             if time_match
                             else comment_text
                         )
+                        extra, comment = comment.split('h',1)
+                        print("------------------------------",extra)
+                        print("------------------------------",comment)
                         likes = likes_match.group(0).strip() if likes_match else "N/A"
                         views = views_match.group(1).strip() if views_match else "N/A"
                         item = {
                             "Name": name,
                             "Username": username,
-                            "Time": timed,
+                            # "Time": timed,
                             "Comment": comment,
                             "Likes": likes,
-                            "Views": views,
+                            # "Views": views,
                         }
                         twitter_data.append(item)
     except (NetworkError, PageError) as e:
