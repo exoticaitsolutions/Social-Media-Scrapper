@@ -29,9 +29,9 @@ async def get_mailinator_code(browser, page, email):
 
         # Get the element containing the code
         code_element = await page.waitForSelector(
-            "div.fz-20.ff-futura-demi.gray-color.ng-binding"
-        )
-        code_text = await code_element.evaluate("(element) => element.textContent")
+            "div.fz-20.ff-futura-demi.gray-color.ng-binding")
+        code_text = await code_element.evaluate(
+            "(element) => element.textContent")
 
         # Extract the code
         elements = code_text.split()
@@ -43,7 +43,8 @@ async def get_mailinator_code(browser, page, email):
         return code
 
     except Exception as e:
-        print(f"An error occurred while fetching code from Mailinator: {str(e)}")
+        print(
+            f"An error occurred while fetching code from Mailinator: {str(e)}")
         return None
 
     finally:

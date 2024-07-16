@@ -169,19 +169,20 @@ USER_CREDENTIALS = [
 #             login_process_time = time.time() - start_time
 #             print(f"Login execution time: {login_process_time:.2f} seconds")
 #             print(f'login successfully with the {username_value}')
-#             return True, f'login successfully with the {username_value}', browser, page
-
+# return True, f'login successfully with the {username_value}', browser,
+# page
 
 #     except Exception as e:
 #         print(f"An error occurred during login process: {str(e)}")
-#         return False, f'login successfully with the {username_value}', browser, page
+# return False, f'login successfully with the {username_value}', browser,
+# page
 
 #     finally:
 #         login_process_time = time.time() - start_time
 #         print(f"Login execution time: {login_process_time:.2f} seconds")
 #         print(f'login successfully with the {username_value}')
-#         return True, f'login successfully with the {username_value}', browser, page
-
+# return True, f'login successfully with the {username_value}', browser,
+# page
 async def login():
     """
     Logs into Twitter using a randomly selected set of credentials.
@@ -194,19 +195,20 @@ async def login():
     username_value = credentials["username"]
     password_value = credentials["password"]
     email = credentials["email"]
-    browser, page = await (
-        init_puppeteers.initialize_paid_proxy() if settings.PAIDPROXY else init_puppeteers.initialize_free_proxy())
-    
+    browser, page = await (init_puppeteers.initialize_paid_proxy()
+                           if settings.PAIDPROXY else
+                           init_puppeteers.initialize_free_proxy())
+
     try:
         print(f"Opening page from URL: {TWITTER_LOGIN_URL}")
         await page.goto(TWITTER_LOGIN_URL, waitUntil="domcontentloaded")
         print(f"Page opened successfully")
-        
+
         # Wait for and enter username
         await page.waitForSelector('input[name="text"]', timeout=5000)
         await page.type('input[name="text"]', username_value)
         print(f"Username entered: {username_value}")
-        
+
         # Click Next button
         next_button = await page.xpath("//span[contains(text(),'Next')]")
         if next_button:
@@ -214,21 +216,22 @@ async def login():
             print("Next clicked successfully")
         else:
             raise Exception("Next button not found")
-        
+
         # Handle email popup if present
-        email_popup = await page.xpath('//input[@data-testid="ocfEnterTextTextInput"]')
+        email_popup = await page.xpath(
+            '//input[@data-testid="ocfEnterTextTextInput"]')
         if email_popup:
             await email_popup[0].type(email)
             next_button = await page.xpath("//span[contains(text(),'Next')]")
             if next_button:
                 await next_button[0].click()
                 print("Email entered and next clicked successfully")
-        
+
         # Wait for and enter password
         await page.waitForSelector("input[name='password']", timeout=5000)
         await page.type("input[name='password']", password_value)
         print(f"Password entered")
-        
+
         # Click login button
         log_in_button = await page.xpath("//span[contains(text(),'Log in')]")
         if log_in_button:
@@ -236,27 +239,30 @@ async def login():
             print("Log in clicked successfully")
         else:
             raise Exception("Log in button not found")
-        
+
         # Handle authentication code if required
         try:
-            code_input_box = await page.waitForSelector('input[inputmode="text"]', timeout=5000)
+            code_input_box = await page.waitForSelector(
+                'input[inputmode="text"]', timeout=5000)
             if code_input_box:
                 print("Code input box found for authentication")
-                code = await get_mailinator_code(browser, page, email)  # Fetch verification code
+                code = await get_mailinator_code(browser, page, email
+                                                 )  # Fetch verification code
                 await code_input_box.type(code)
                 await page.click("div.css-175oi2r.r-b9tw7p button")
-                print("Confirmation code entered and next clicked successfully")
+                print(
+                    "Confirmation code entered and next clicked successfully")
         except Exception as e:
             print(f"No authentication code required: {str(e)}")
-        
+
         login_process_time = time.time() - start_time
         print(f"Login execution time: {login_process_time:.2f} seconds")
         return True, f"Login successful with {username_value}", browser, page
-    
+
     except Exception as e:
         print(f"An error occurred during login process: {str(e)}")
         return False, f"Login failed with {username_value}", browser, page
-    
+
     finally:
         login_process_time = time.time() - start_time
         print(f"Login execution time: {login_process_time:.2f} seconds")
@@ -286,7 +292,10 @@ def get_cache(key, default=None):
     return cache.get(key, default)
 
 
-def message_json_response(code: int, error_type: str, error_message: str, data: Optional[Dict] = None) -> JsonResponse:
+def message_json_response(code: int,
+                          error_type: str,
+                          error_message: str,
+                          data: Optional[Dict] = None) -> JsonResponse:
     """
     Create a JSON response with the provided code, error type, error message, and optional data.
     Parameters:
@@ -305,7 +314,9 @@ def message_json_response(code: int, error_type: str, error_message: str, data: 
     if data:
         response_data["data"] = data
 
-    return JsonResponse(response_data, status=code, json_dumps_params=dict(indent=2))
+    return JsonResponse(response_data,
+                        status=code,
+                        json_dumps_params=dict(indent=2))
 
 
 def save_data_in_directory(folder_name, file_name, json_data: dict):
@@ -333,11 +344,12 @@ def save_data_in_directory(folder_name, file_name, json_data: dict):
 
 
 def save_data_and_return(data, data_append):
-    save_data_in_directory(f"json_Response/{timezone.now().date()}/", data_append, data)
+    save_data_in_directory(f"json_Response/{timezone.now().date()}/",
+                           data_append, data)
     return message_json_response(
         status.HTTP_200_OK,
         "success",
-        "Tweets retrieved successfully" if len(data) > 0 else "No tweets found",
-        data=[] if len(data) == 0 else data
+        "Tweets retrieved successfully"
+        if len(data) > 0 else "No tweets found",
+        data=[] if len(data) == 0 else data,
     )
-
