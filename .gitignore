@@ -9,6 +9,10 @@ media
 # Backup files # 
 *.bak 
 
+# Ignore virtual environment directories
+venv/
+env/
+
 # If you are using PyCharm # 
 # User-specific stuff
 .idea/**/workspace.xml

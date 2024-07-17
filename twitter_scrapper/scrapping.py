@@ -1,7 +1,5 @@
 import asyncio
-import json
 import logging
-import random
 import re
 import time
 import re
@@ -165,7 +163,6 @@ async def fetch_tweets_by_profile(profile_name, retry_count=0, full_url=None):
             "Retweet": Retweets[i],
             "Like": Likes[i],
         } for i in range(len(UserTags))]
-        # await page.screenshot({'path': f'example_{random.randint(1, 100)}.png'})
     except (NetworkError, PageError) as e:
         print(f"Error interacting with Twitter: {str(e)}")
         await browser.close()
@@ -193,7 +190,6 @@ async def fetch_tweets_by_hashtag(hashtag, retry_count=0, full_url=None):
         return success, message
     try:
         print(f"login status  {message}")
-        # await page.screenshot({'path': f'example_{random.randint(1, 100)}.png'})
         await page.waitForXPath(
             "//input[@data-testid='SearchBox_Search_Input']")
         search_box = await page.xpath(

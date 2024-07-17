@@ -54,20 +54,20 @@ git clone https://github.com/exoticaitsolutions/Social-Media-Scrapper.git
 
 # **_Windows:_**
 ```
-py -m venv .venv
+python -m venv venv
 ```
 **Unix/MacOS:**
 ```
- python3 -m venv .venv
+python3 -m venv venv
 ```
 Then you have to activate the environment, by typing this command:
 Windows:
 ```
-.venv\Scripts\activate.bat
+venv\Scripts\activate 
 ```
 Unix/MacOS:
 ```
-source .venv/bin/activate
+source venv/bin/activate
 ```
 # Install Dependencies
 ### Using requirements.txt
@@ -84,6 +84,10 @@ pip install django-cors-headers
 ***blinker***
 ```
 pip install blinker==1.7.0
+```
+***unicorn***
+```
+pip install unicorn
 ```
 
 ***Fake Useragent***
