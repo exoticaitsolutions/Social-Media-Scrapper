@@ -87,7 +87,7 @@ pip install blinker==1.7.0
 ```
 ***unicorn***
 ```
-pip install unicorn
+pip install uvicorn
 ```
 
 ***Fake Useragent***
