@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from pyppeteer.errors import NetworkError, PageError
 
 from .utils import login, set_cache
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -15,7 +16,7 @@ NUMBER_OF_POSTS = 5
 NUMBER_OF_COMMENTS = 3
 MAX_THREAD_COUNT = 5
 MAX_EXCEPTION_RETRIES = 3
-CACHE_TIMEOUT = 60 * 15
+CACHE_TIMEOUT = 3600
 
 
 async def retry_exception(recalling_method_name,
@@ -178,11 +179,27 @@ async def fetch_tweets_by_profile(profile_name, retry_count=0, full_url=None):
         total_time = end_time - start_time  # Calculate the total time of execution
         await browser.close()
         print(f"Total execution time: {total_time:.2f} seconds")
-    set_cache(full_url, twitter_data, timeout=CACHE_TIMEOUT)
+    cache.set(full_url, twitter_data, timeout=CACHE_TIMEOUT)
     return True, twitter_data
 
-
 async def fetch_tweets_by_hashtag(hashtag, retry_count=0, full_url=None):
+    """
+    Fetches tweets based on a given hashtag.
+
+    This function logs into Twitter, searches for the specified hashtag, and scrapes tweets that 
+    match the search criteria. It collects various details about each tweet, such as user tags, 
+    timestamps, tweet content, and interaction counts (replies, retweets, likes). The data is stored 
+    in a list and cached for future use.
+
+    Args:
+        hashtag (str): The hashtag to search for.
+        retry_count (int, optional): The current retry attempt count. Defaults to 0.
+        full_url (str, optional): The full URL used for caching. Defaults to None.
+
+    Returns:
+        tuple: A tuple containing a boolean indicating success and either a list of fetched tweet 
+               data or an error message.
+    """
     start_time = time.time()
     twitter_data = []
     success, message, browser, page = await login()
@@ -190,12 +207,10 @@ async def fetch_tweets_by_hashtag(hashtag, retry_count=0, full_url=None):
         return success, message
     try:
         print(f"login status  {message}")
-        await page.waitForXPath(
-            "//input[@data-testid='SearchBox_Search_Input']")
-        search_box = await page.xpath(
-            "//input[@data-testid='SearchBox_Search_Input']")
+        await page.waitForXPath("//input[@data-testid='SearchBox_Search_Input']")
+        search_box = await page.xpath("//input[@data-testid='SearchBox_Search_Input']")
         print(f"Search element is found")
-        await asyncio.sleep(5)  # Wait for 2 seconds
+        await asyncio.sleep(5)  # Wait for 5 seconds
         await search_box[0].type(hashtag)
         print(f"Search element is found and type the values")
         await search_box[0].press("Enter")
@@ -208,43 +223,31 @@ async def fetch_tweets_by_hashtag(hashtag, retry_count=0, full_url=None):
 
             for article in articles:
                 try:
-                    UserTag = await article.querySelectorEval(
-                        'div[dir="ltr"] span', "node => node.innerText")
+                    UserTag = await article.querySelectorEval('div[dir="ltr"] span', "node => node.innerText")
                 except Exception:
                     UserTag = ""
                 UserTags.append(UserTag)
 
-                timestamp = await article.querySelectorEval(
-                    "time", 'node => node.getAttribute("datetime")')
+                timestamp = await article.querySelectorEval("time", 'node => node.getAttribute("datetime")')
                 TimeStamps.append(timestamp)
 
-                tweet = await article.querySelectorEval(
-                    "div[lang]", "node => node.innerText")
+                tweet = await article.querySelectorEval("div[lang]", "node => node.innerText")
                 Tweets.append(tweet)
 
                 try:
-                    reply = await page.evaluate(
-                        "(article) => article.querySelector(\"[data-testid='reply']\").innerText",
-                        article,
-                    )
+                    reply = await page.evaluate("(article) => article.querySelector(\"[data-testid='reply']\").innerText", article)
                 except Exception:
                     reply = "0"
                 Replies.append(reply)
 
                 try:
-                    retweet = await page.evaluate(
-                        "(article) => article.querySelector(\"[data-testid='retweet'] span\").innerText",
-                        article,
-                    )
+                    retweet = await page.evaluate("(article) => article.querySelector(\"[data-testid='retweet'] span\").innerText", article)
                 except Exception:
                     retweet = "0"
                 Retweets.append(retweet)
 
                 try:
-                    like = await page.evaluate(
-                        "(article) => article.querySelector(\"[data-testid='like'] span\").innerText",
-                        article,
-                    )
+                    like = await page.evaluate("(article) => article.querySelector(\"[data-testid='like'] span\").innerText", article)
                 except Exception:
                     like = "0"
                 Likes.append(like)
@@ -252,8 +255,7 @@ async def fetch_tweets_by_hashtag(hashtag, retry_count=0, full_url=None):
                 if len(Tweets) >= NUMBER_OF_POSTS:
                     break
 
-            await page.evaluate(
-                "window.scrollTo(0, document.body.scrollHeight)")
+            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
             await asyncio.sleep(3)
 
         twitter_data = [{
@@ -265,27 +267,42 @@ async def fetch_tweets_by_hashtag(hashtag, retry_count=0, full_url=None):
             "Retweet": Retweets[i],
             "Like": Likes[i],
         } for i in range(len(UserTags))]
-        # await page.screenshot({'path': f'example_{random.randint(1, 100)}.png'})
+
     except (NetworkError, PageError) as e:
         print(f"Error interacting with Twitter: {str(e)}")
         await browser.close()
-        return await retry_exception(fetch_tweets_by_profile, hashtag,
-                                     retry_count, str(e))
+        return await retry_exception(fetch_tweets_by_hashtag, hashtag, retry_count, str(e))
     except Exception as e:
         print(f"An unexpected error occurred: {str(e)}")
         await browser.close()
-        return await retry_exception(fetch_tweets_by_profile, hashtag,
-                                     retry_count, str(e))
+        return await retry_exception(fetch_tweets_by_hashtag, hashtag, retry_count, str(e))
     finally:
         end_time = time.time()
         total_time = end_time - start_time  # Calculate the total time of execution
         await browser.close()
         print(f"Total execution time: {total_time:.2f} seconds")
-    set_cache(full_url, twitter_data, timeout=CACHE_TIMEOUT)
+    
+    cache.set(full_url, twitter_data, timeout=CACHE_TIMEOUT)
     return True, twitter_data
 
 
 async def fetch_trending_hashtags(trending_data, retry_count=0, full_url=None):
+    """
+    Fetches trending hashtags from Twitter's explore page.
+
+    This function logs into Twitter, navigates to the trending keywords page, scrolls through the page 
+    to load all trending topics, and extracts relevant information about each trending topic. The data 
+    is stored in a list and cached for future use.
+
+    Args:
+        trending_data (list): A list to store the fetched trending data.
+        retry_count (int, optional): The current retry attempt count. Defaults to 0.
+        full_url (str, optional): The full URL used for caching. Defaults to None.
+
+    Returns:
+        tuple: A tuple containing a boolean indicating success and either a list of fetched trending 
+               data or an error message.
+    """
     start_time = time.time()
     twitter_data = []
     success, message, browser, page = await login()
@@ -334,9 +351,7 @@ async def fetch_trending_hashtags(trending_data, retry_count=0, full_url=None):
         for index, element in enumerate(trending_topics_elements, start=1):
             text = await (await element.getProperty("textContent")).jsonValue()
             if "Trending" in text:
-                print("text : ", text)
                 data = text.split("·")
-                print("parts", data)
                 if len(data) == 2:
                     combined = data[1].strip()
                     category = "Trending"
@@ -377,14 +392,29 @@ async def fetch_trending_hashtags(trending_data, retry_count=0, full_url=None):
         total_time = end_time - start_time  # Calculate the total time of execution
         await browser.close()
         print(f"Total execution time: {total_time:.2f} seconds")
-    set_cache(full_url, twitter_data, timeout=CACHE_TIMEOUT)
+    cache.set(full_url, twitter_data, timeout=CACHE_TIMEOUT)
     return True, twitter_data
-
 
 async def scrape_twitter_data_by_post_id(user_name,
                                          post_ids_str,
                                          retry_count=0,
                                          full_url=None):
+    """
+    Scrapes detailed information from specified tweet posts for a given Twitter user.
+
+    This function logs into Twitter, navigates to each specified tweet, extracts tweet content, image URL, 
+    reply count, like count, repost count, bookmark count, and timestamp, and stores the data in a list.
+
+    Args:
+        user_name (str): The Twitter username whose tweets are to be scraped.
+        post_ids_str (str): Comma-separated string of tweet post IDs to scrape.
+        retry_count (int, optional): The current retry attempt count. Defaults to 0.
+        full_url (str, optional): The full URL used for caching. Defaults to None.
+
+    Returns:
+        tuple: A tuple containing a boolean indicating success and either a list of scraped tweet data 
+               or an error message.
+    """
     start_time = time.time()
     twitter_data = []
     success, message, browser, page = await login()
@@ -462,15 +492,23 @@ async def scrape_twitter_data_by_post_id(user_name,
         total_time = end_time - start_time  # Calculate the total time of execution
         await browser.close()
         print(f"Total execution time: {total_time:.2f} seconds")
-    set_cache(full_url, twitter_data, timeout=CACHE_TIMEOUT)
+    cache.set(full_url, twitter_data, timeout=CACHE_TIMEOUT)
     return True, twitter_data
 
+async def scrap_get_comments_of_tweet(user_name, post_ids_str, retry_count=0, full_url=None):
+    """
+    Scrapes comments from specified tweet posts for a given Twitter user.
 
-async def scrap_get_comments_of_tweet(user_name,
-                                      post_ids_str,
-                                      request,
-                                      retry_count=0,
-                                      full_url=None):
+    Args:
+        user_name (str): The Twitter username to scrape comments from.
+        post_ids_str (str): Comma-separated string of tweet post IDs to scrape.
+        retry_count (int, optional): The current retry attempt count. Defaults to 0.
+        full_url (str, optional): The full URL used for caching. Defaults to None.
+
+    Returns:
+        tuple: A tuple containing a boolean indicating success and either a list of comment data 
+               or an error message.
+    """
     start_time = time.time()
     twitter_data = []
     success, message, browser, page = await login()
@@ -483,69 +521,53 @@ async def scrap_get_comments_of_tweet(user_name,
         for post_id in post_ids:
             twitter_url = f"https://twitter.com/{user_name}/status/{post_id}"
 
-            print(f"Opening trending url page from URL: {twitter_url}")
+            print(f"Opening tweet page from URL: {twitter_url}")
             await page.goto(twitter_url, waitUntil="domcontentloaded")
             await page.waitForNavigation()
-            print(f"opened  successfully")
+            print("Page opened successfully")
             await asyncio.sleep(4)
             while len(twitter_data) < NUMBER_OF_COMMENTS:
-                await page.evaluate(
-                    "window.scrollBy(0, window.innerHeight * 0.5);")
+                await page.evaluate("window.scrollBy(0, window.innerHeight * 0.5);")
                 await asyncio.sleep(4)
                 elements = await page.xpath("//*[@role='article']")
-                print("element is found ")
+                print("Elements found")
                 for element in elements:
-                    comment_text = await (
-                        await element.getProperty("textContent")).jsonValue()
+                    comment_text = await (await element.getProperty("textContent")).jsonValue()
                     if comment_text:
                         comment_text = comment_text.strip()
-                        name_match = re.search(r"^(.*?)(@[\w_]+)",
-                                               comment_text)
-                        time_match = re.search(
-                            r"(\d{1,2}:\d{2} [APM]{2} \u00b7 \w{3} \d{1,2}, \d{4})",
-                            comment_text,
-                        )
-                        likes_match = re.search(r"(\d+\.\d+K|\d+K|\d+)",
-                                                comment_text)
-                        views_match = re.search(
-                            r"(\d+\.\d+K|\d+K|\d+)\s+Views", comment_text)
-                        name = name_match.group(
-                            1).strip() if name_match else "N/A"
-                        username = name_match.group(
-                            2).strip() if name_match else "N/A"
-                        timed = time_match.group(
-                            0).strip() if time_match else "N/A"
-                        comment = (comment_text.split(
-                            time_match.group(0))[0].strip()
-                                   if time_match else comment_text)
+                        name_match = re.search(r"^(.*?)(@[\w_]+)", comment_text)
+                        time_match = re.search(r"(\d{1,2}:\d{2} [APM]{2} \u00b7 \w{3} \d{1,2}, \d{4})", comment_text)
+                        likes_match = re.search(r"(\d+\.\d+K|\d+K|\d+)", comment_text)
+                        views_match = re.search(r"(\d+\.\d+K|\d+K|\d+)\s+Views", comment_text)
+                        
+                        name = name_match.group(1).strip() if name_match else "N/A"
+                        username = name_match.group(2).strip() if name_match else "N/A"
+                        timed = time_match.group(0).strip() if time_match else "N/A"
+                        comment = (comment_text.split(time_match.group(0))[0].strip() if time_match else comment_text)
                         extra, comment = comment.split("h", 1)
-                        likes = likes_match.group(
-                            0).strip() if likes_match else "N/A"
-                        views = views_match.group(
-                            1).strip() if views_match else "N/A"
+                        likes = likes_match.group(0).strip() if likes_match else "N/A"
+                        views = views_match.group(1).strip() if views_match else "N/A"
+                        
                         item = {
                             "Name": name,
                             "Username": username,
-                            # "Time": timed,
                             "Comment": comment,
                             "Likes": likes,
-                            # "Views": views,
                         }
                         twitter_data.append(item)
     except (NetworkError, PageError) as e:
         print(f"Error interacting with Twitter: {str(e)}")
         await browser.close()
-        return await retry_exception(scrap_get_comments_of_tweet, user_name,
-                                     post_ids_str, retry_count, str(e))
+        return await retry_exception(scrap_get_comments_of_tweet, user_name, post_ids_str, retry_count, str(e))
     except Exception as e:
         print(f"An unexpected error occurred: {str(e)}")
         await browser.close()
-        return await retry_exception(scrap_get_comments_of_tweet, user_name,
-                                     post_ids_str, retry_count, str(e))
+        return await retry_exception(scrap_get_comments_of_tweet, user_name, post_ids_str, retry_count, str(e))
     finally:
         end_time = time.time()
         total_time = end_time - start_time  # Calculate the total time of execution
         await browser.close()
         print(f"Total execution time: {total_time:.2f} seconds")
-    set_cache(full_url, twitter_data, timeout=CACHE_TIMEOUT)
+    
+    cache.set(full_url, twitter_data, timeout=CACHE_TIMEOUT)
     return True, twitter_data
