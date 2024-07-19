@@ -84,6 +84,7 @@ USER_CREDENTIALS = [
     },
 ]
 
+
 async def login():
     """
     Logs into Twitter using a randomly selected set of credentials.
@@ -96,9 +97,11 @@ async def login():
     username_value = credentials["username"]
     password_value = credentials["password"]
     email = credentials["email"]
-    browser, page = await (init_puppeteers.initialize_paid_proxy()
-                           if settings.PAIDPROXY else
-                           init_puppeteers.initialize_free_proxy())
+    browser, page = await (
+        init_puppeteers.initialize_paid_proxy()
+        if settings.PAIDPROXY
+        else init_puppeteers.initialize_free_proxy()
+    )
 
     try:
         print(f"Opening page from URL: {TWITTER_LOGIN_URL}")
@@ -119,8 +122,7 @@ async def login():
             raise Exception("Next button not found")
 
         # Handle email popup if present
-        email_popup = await page.xpath(
-            '//input[@data-testid="ocfEnterTextTextInput"]')
+        email_popup = await page.xpath('//input[@data-testid="ocfEnterTextTextInput"]')
         if email_popup:
             await email_popup[0].type(email)
             next_button = await page.xpath("//span[contains(text(),'Next')]")
@@ -144,15 +146,16 @@ async def login():
         # Handle authentication code if required
         try:
             code_input_box = await page.waitForSelector(
-                'input[inputmode="text"]', timeout=5000)
+                'input[inputmode="text"]', timeout=5000
+            )
             if code_input_box:
                 print("Code input box found for authentication")
-                code = await get_mailinator_code(browser, page, email
-                                                 )  # Fetch verification code
+                code = await get_mailinator_code(
+                    browser, page, email
+                )  # Fetch verification code
                 await code_input_box.type(code)
                 await page.click("div.css-175oi2r.r-b9tw7p button")
-                print(
-                    "Confirmation code entered and next clicked successfully")
+                print("Confirmation code entered and next clicked successfully")
         except Exception as e:
             print(f"No authentication code required: {str(e)}")
 
@@ -193,10 +196,9 @@ def get_cache(key, default=None):
     return cache.get(key, default)
 
 
-def message_json_response(code: int,
-                          error_type: str,
-                          error_message: str,
-                          data: Optional[Dict] = None) -> JsonResponse:
+def message_json_response(
+    code: int, error_type: str, error_message: str, data: Optional[Dict] = None
+) -> JsonResponse:
     """
     Create a JSON response with the provided code, error type, error message, and optional data.
     Parameters:
@@ -215,9 +217,7 @@ def message_json_response(code: int,
     if data:
         response_data["data"] = data
 
-    return JsonResponse(response_data,
-                        status=code,
-                        json_dumps_params=dict(indent=2))
+    return JsonResponse(response_data, status=code, json_dumps_params=dict(indent=2))
 
 
 def save_data_in_directory(folder_name, file_name, json_data: dict):
@@ -245,12 +245,10 @@ def save_data_in_directory(folder_name, file_name, json_data: dict):
 
 
 def save_data_and_return(data, data_append):
-    save_data_in_directory(f"json_Response/{timezone.now().date()}/",
-                           data_append, data)
+    save_data_in_directory(f"json_Response/{timezone.now().date()}/", data_append, data)
     return message_json_response(
         status.HTTP_200_OK,
         "success",
-        "Tweets retrieved successfully"
-        if len(data) > 0 else "No tweets found",
+        "Tweets retrieved successfully" if len(data) > 0 else "No tweets found",
         data=[] if len(data) == 0 else data,
     )

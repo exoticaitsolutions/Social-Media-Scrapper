@@ -55,11 +55,10 @@ HEADLESS = True
 #     return None
 
 
-
-
 import os
 import platform
 import shutil
+
 
 def find_chrome_executable():
     """
@@ -74,20 +73,40 @@ def find_chrome_executable():
     # Handle Windows systems
     if system == "Windows":
         possible_paths = [
-            os.path.join(os.environ.get("ProgramFiles", "C:\\Program Files"), "Google", "Chrome", "Application", "chrome.exe"),
-            os.path.join(os.environ.get("ProgramFiles(x86)", "C:\\Program Files (x86)"), "Google", "Chrome", "Application", "chrome.exe"),
+            os.path.join(
+                os.environ.get("ProgramFiles", "C:\\Program Files"),
+                "Google",
+                "Chrome",
+                "Application",
+                "chrome.exe",
+            ),
+            os.path.join(
+                os.environ.get("ProgramFiles(x86)", "C:\\Program Files (x86)"),
+                "Google",
+                "Chrome",
+                "Application",
+                "chrome.exe",
+            ),
         ]
 
         # Windows 10 and 11 might have additional installation paths
         windows_specific_paths = [
-            os.path.join(os.environ.get("LOCALAPPDATA", "C:\\Users\\%USERNAME%\\AppData\\Local"), "Google\\Chrome\\Application\\chrome.exe"),
-            os.path.join(os.environ.get("APPDATA", "C:\\Users\\%USERNAME%\\AppData\\Roaming"), "Google\\Chrome\\Application\\chrome.exe"),
+            os.path.join(
+                os.environ.get("LOCALAPPDATA", "C:\\Users\\%USERNAME%\\AppData\\Local"),
+                "Google\\Chrome\\Application\\chrome.exe",
+            ),
+            os.path.join(
+                os.environ.get("APPDATA", "C:\\Users\\%USERNAME%\\AppData\\Roaming"),
+                "Google\\Chrome\\Application\\chrome.exe",
+            ),
         ]
         possible_paths.extend(windows_specific_paths)
 
         # Check if Chrome exists at any of these paths
-        chrome_path = next((path for path in possible_paths if os.path.exists(path)), None)
-        
+        chrome_path = next(
+            (path for path in possible_paths if os.path.exists(path)), None
+        )
+
         # Example temporary directory (adjust according to your use case)
         temp_dir = os.path.join(os.environ.get("TEMP", "C:\\Temp"), "chrome_temp")
 
@@ -102,7 +121,9 @@ def find_chrome_executable():
 
     # Handle Linux systems (Ubuntu)
     elif system == "Linux":
-        chrome_path = shutil.which("google-chrome") or shutil.which("google-chrome-stable")
+        chrome_path = shutil.which("google-chrome") or shutil.which(
+            "google-chrome-stable"
+        )
         if chrome_path:
             return chrome_path
 
@@ -112,10 +133,13 @@ def find_chrome_executable():
             "/usr/bin/google-chrome-stable",
             "/opt/google/chrome/google-chrome",
         ]
-        return next((path for path in linux_specific_paths if os.path.exists(path)), None)
+        return next(
+            (path for path in linux_specific_paths if os.path.exists(path)), None
+        )
 
     # Return None if Chrome is not found
     return None
+
 
 # Test the function
 chrome_path = find_chrome_executable()
