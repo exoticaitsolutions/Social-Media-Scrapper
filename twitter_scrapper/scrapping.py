@@ -18,7 +18,7 @@ def print_current_thread():
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-NUMBER_OF_POSTS = 20
+NUMBER_OF_POSTS = 5
 NUMBER_OF_COMMENTS = 3
 MAX_THREAD_COUNT = 5
 MAX_EXCEPTION_RETRIES = 3
