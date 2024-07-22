@@ -18,7 +18,7 @@ def print_current_thread():
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-NUMBER_OF_POSTS = 10
+NUMBER_OF_POSTS = 20
 NUMBER_OF_COMMENTS = 3
 MAX_THREAD_COUNT = 5
 MAX_EXCEPTION_RETRIES = 3
@@ -104,6 +104,7 @@ async def fetch_tweets_by_profile(profile_name, retry_count=0, full_url=None):
         await asyncio.sleep(3)
 
         UserTags, TimeStamps, Tweets, Replies, Retweets, Likes = [], [], [], [], [], []
+        print("Start scraping please wait for some minutes to see data......")
         # Scrape tweets
         while len(Tweets) < NUMBER_OF_POSTS:
             await page.waitForXPath("//article[@data-testid='tweet']")
@@ -185,12 +186,12 @@ async def fetch_tweets_by_profile(profile_name, retry_count=0, full_url=None):
         return await retry_exception(
             fetch_tweets_by_profile, profile_name, retry_count, str(e)
         )
-    finally:
-        end_time = time.time()
-        total_time = end_time - start_time  # Calculate the total time of execution
-        await browser.close()
-        print(f"Total execution time: {total_time:.2f} seconds")
+
     cache.set(full_url, twitter_data, timeout=CACHE_TIMEOUT)
+    end_time = time.time()
+    total_time = end_time - start_time  # Calculate the total time of execution
+    await browser.close()
+    print(f"Total execution time: {total_time:.2f} seconds")
     return True, twitter_data
 
 
@@ -232,6 +233,7 @@ async def fetch_tweets_by_hashtag(hashtag, retry_count=0, full_url=None):
 
         # Initialize lists to store tweet data
         UserTags, TimeStamps, Tweets, Replies, Retweets, Likes = [], [], [], [], [], []
+        print("Start scraping please wait for some minutes to see data......")
 
         while len(Tweets) < NUMBER_OF_POSTS:
             await page.waitForXPath("//article[@data-testid='tweet']")
@@ -314,13 +316,12 @@ async def fetch_tweets_by_hashtag(hashtag, retry_count=0, full_url=None):
         return await retry_exception(
             fetch_tweets_by_hashtag, hashtag, retry_count + 1, full_url
         )
-    finally:
-        end_time = time.time()
-        total_time = end_time - start_time
-        await browser.close()
-        print(f"Total execution time: {total_time:.2f} seconds")
 
     cache.set(full_url, twitter_data, timeout=CACHE_TIMEOUT)
+    end_time = time.time()
+    total_time = end_time - start_time
+    await browser.close()
+    print(f"Total execution time: {total_time:.2f} seconds")
     return True, twitter_data
 
 
@@ -362,6 +363,7 @@ async def fetch_tweets_by_hashtag(hashtag, retry_count=0, full_url=None):
 
         # Initialize lists to store tweet data
         UserTags, TimeStamps, Tweets, Replies, Retweets, Likes = [], [], [], [], [], []
+        print("Start scraping please wait for some minutes to see data......")
 
         while len(Tweets) < NUMBER_OF_POSTS:
             await page.waitForXPath("//article[@data-testid='tweet']")
@@ -447,13 +449,12 @@ async def fetch_tweets_by_hashtag(hashtag, retry_count=0, full_url=None):
         return await retry_exception(
             fetch_tweets_by_hashtag, hashtag, retry_count + 1, full_url
         )
-    finally:
-        end_time = time.time()
-        total_time = end_time - start_time
-        await browser.close()
-        print(f"Total execution time: {total_time:.2f} seconds")
 
     cache.set(full_url, twitter_data, timeout=CACHE_TIMEOUT)
+    end_time = time.time()
+    total_time = end_time - start_time
+    await browser.close()
+    print(f"Total execution time: {total_time:.2f} seconds")
     return True, twitter_data
 
 
@@ -489,14 +490,14 @@ async def fetch_trending_hashtags(trending_data, retry_count=0, full_url=None):
             "https://x.com/explore/tabs/keyword", waitUntil="domcontentloaded"
         )
         await page.waitForNavigation()
-        print(f"opened  successfully")
+        print("opened  successfully")
         await asyncio.sleep(4)
         await page.waitForXPath('//*[@data-testid="cellInnerDiv"]')
         # Scroll up by 30%
         await page.evaluate("window.scrollBy(0, -document.body.scrollHeight * 0.3);")
         await asyncio.sleep(3)
         last_height = await page.evaluate("() => document.body.scrollHeight")
-        print(f"last_height element is found")
+        print("Start scraping please wait for some minutes to see data......")
         while True:
             await page.evaluate("window.scrollBy(0, 200);")
             await asyncio.sleep(3)  # Random sleep to simulate human interaction
@@ -558,12 +559,12 @@ async def fetch_trending_hashtags(trending_data, retry_count=0, full_url=None):
         return await retry_exception(
             fetch_trending_hashtags, trending_data, retry_count, str(e)
         )
-    finally:
-        end_time = time.time()
-        total_time = end_time - start_time  # Calculate the total time of execution
-        await browser.close()
-        print(f"Total execution time: {total_time:.2f} seconds")
+
     cache.set(full_url, twitter_data, timeout=CACHE_TIMEOUT)
+    end_time = time.time()
+    total_time = end_time - start_time  # Calculate the total time of execution
+    await browser.close()
+    print(f"Total execution time: {total_time:.2f} seconds")
     return True, twitter_data
 
 
@@ -606,7 +607,7 @@ async def scrape_twitter_data_by_post_id(
             await asyncio.sleep(4)
             # Scroll down 30% of the page height
             await page.evaluate("window.scrollBy(0, window.innerHeight * 0.5);")
-            print("scrolling................")
+            print("Start scraping please wait for some minutes to see data......")
             await asyncio.sleep(4)
             # Extract tweet content
             tweet_content = await page.evaluate(
@@ -654,12 +655,12 @@ async def scrape_twitter_data_by_post_id(
         return await retry_exception(
             scrape_twitter_data_by_post_id, user_name, post_ids_str, retry_count, str(e)
         )
-    finally:
-        end_time = time.time()
-        total_time = end_time - start_time  # Calculate the total time of execution
-        await browser.close()
-        print(f"Total execution time: {total_time:.2f} seconds")
+
     cache.set(full_url, twitter_data, timeout=CACHE_TIMEOUT)
+    end_time = time.time()
+    total_time = end_time - start_time  # Calculate the total time of execution
+    await browser.close()
+    print(f"Total execution time: {total_time:.2f} seconds")
     return True, twitter_data
 
 
@@ -672,7 +673,7 @@ async def scrap_get_comments_of_tweet(
     Args:
         user_name (str): The Twitter username to scrape comments from.
         post_ids_str (str): Comma-separated string of tweet post IDs to scrape.
-        retry_count (int, optional): The current retry attempt count. Defaults to 0.
+        retry_count (int, opt()ional): The current retry attempt count. Defaults to 0.
         full_url (str, optional): The full URL used for caching. Defaults to None.
 
     Returns:
@@ -698,6 +699,7 @@ async def scrap_get_comments_of_tweet(
             await page.waitForNavigation()
             print("Page opened successfully")
             await asyncio.sleep(4)
+            print("Start scraping please wait for some minutes to see data......")
             
             tweet_comments = []
             while len(tweet_comments) < NUMBER_OF_COMMENTS:
@@ -763,11 +765,10 @@ async def scrap_get_comments_of_tweet(
             str(e),
             full_url,
         )
-    finally:
-        end_time = time.time()
-        total_time = end_time - start_time  # Calculate the total time of execution
-        await browser.close()
-        print(f"Total execution time: {total_time:.2f} seconds")
 
     cache.set(full_url, comments_data, timeout=CACHE_TIMEOUT)
+    end_time = time.time()
+    total_time = end_time - start_time  # Calculate the total time of execution
+    await browser.close()
+    print(f"Total execution time: {total_time:.2f} seconds")
     return True, comments_data
