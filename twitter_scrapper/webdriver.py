@@ -7,7 +7,7 @@ from fake_useragent import UserAgent
 
 from pyppeteer import launch
 
-HEADLESS = False
+HEADLESS = True
 
 def find_chrome_executable():
     """
