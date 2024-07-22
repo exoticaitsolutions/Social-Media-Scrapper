@@ -9,57 +9,6 @@ from pyppeteer import launch
 
 HEADLESS = True
 
-
-# def find_chrome_executable():
-#     """
-#     Finds the path to the Google Chrome executable based on
-#     the current operating system.
-#     Returns:
-#         str or None: Path to the Chrome executable if found,
-#         or None if not found.
-#     Raises:
-#         None
-#     Notes:
-#         - On Windows, it checks common installation paths under Program Files
-#         and Program Files (x86).
-#         - On Linux, it checks for 'google-chrome' and 'google-chrome-stable'
-#          in the system PATH.
-#     """
-#     system = platform.system()
-#     print(f"system : {system}")
-#     if system == "Windows":
-#         chrome_paths = [
-#             os.path.join(
-#                 os.environ["ProgramFiles"],
-#                 "Google",
-#                 "Chrome",
-#                 "Application",
-#                 "chrome.exe",
-#             ),
-#             os.path.join(
-#                 os.environ["ProgramFiles(x86)"],
-#                 "Google",
-#                 "Chrome",
-#                 "Application",
-#                 "chrome.exe",
-#             ),
-#         ]
-#         for path in chrome_paths:
-#             if os.path.exists(path):
-#                 return path
-#     elif system == "Linux":
-#         chrome_path = shutil.which("google-chrome")
-#         if chrome_path is None:
-#             chrome_path = shutil.which("google-chrome-stable")
-#         return chrome_path
-#     return None
-
-
-import os
-import platform
-import shutil
-
-
 def find_chrome_executable():
     """
     Finds the path to the Google Chrome executable on the system.
@@ -139,12 +88,6 @@ def find_chrome_executable():
 
     # Return None if Chrome is not found
     return None
-
-
-# Test the function
-chrome_path = find_chrome_executable()
-print(f"Chrome path: {chrome_path}")
-
 
 class InitializePuppeteer:
     """

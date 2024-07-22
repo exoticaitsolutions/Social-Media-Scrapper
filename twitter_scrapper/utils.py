@@ -12,6 +12,7 @@ from .email import get_mailinator_code
 from django.core.cache import cache
 from rest_framework import status
 
+
 HEADLESS = True
 init_puppeteers = InitializePuppeteer()
 TWITTER_LOGIN_URL = "https://twitter.com/i/flow/login"

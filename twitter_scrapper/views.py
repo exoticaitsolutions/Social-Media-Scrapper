@@ -41,34 +41,6 @@ async def get_tweets_by_profile(request):
         )
 
 
-# @api_view(["GET"])
-# async def fetch_tweets_by_hash_tag(request):
-#     """
-#     API view to fetch tweets by a specified hashtag.
-
-#     Parameters:
-#     - request: Django REST Framework request object.
-#       - Query parameter 'hashtags': Specifies the hashtag to fetch tweets for.
-
-#     Returns:
-#     - JSON response with fetched tweets or error message.
-
-#     If the 'hashtags' query parameter is not provided, returns a 400 BAD REQUEST response.
-#     Caches and returns the fetched data if available; otherwise, fetches it asynchronously
-#     using 'fetch_tweets_by_hashtag' and then caches and returns it.
-#     """
-#     hashtag = request.query_params.get("hashtags")
-#     full_url = request.build_absolute_uri()
-#     if not hashtag:
-#         return message_json_response(status.HTTP_400_BAD_REQUEST, "error", "Hashtag is required.")
-#     cached_response = cache.get(full_url)
-#     if cached_response:
-#         return save_data_and_return(cached_response, hashtag)
-#     else:
-#         success, response = await fetch_tweets_by_hashtag(hashtag, 0, full_url)
-#         return save_data_and_return(response, hashtag) if success else message_json_response(status.HTTP_400_BAD_REQUEST, "error", "Something went wrong")
-
-
 @api_view(["GET"])
 async def fetch_tweets_by_hash_tag(request):
     """
@@ -177,40 +149,6 @@ async def get_twitter_data_by_post_id(request):
                 status.HTTP_400_BAD_REQUEST, "error", "Something Wrong"
             )
         )
-
-
-# @api_view(["GET"])
-# async def get_comments_of_tweet_by_post_id(request):
-#     """
-#     API view to fetch comments of a tweet by post IDs.
-
-#     Parameters:
-#     - request: Django REST Framework request object with query parameters:
-#         - user_name: Twitter username whose tweet comments to fetch.
-#         - post_ids: Comma-separated list of Twitter post IDs.
-
-#     Returns:
-#     - JSON response with fetched tweet comments or error message.
-
-#     Checks the cache for previously fetched tweet comments. If found, returns the cached response.
-#     If not cached, asynchronously scrapes tweet comments using 'scrap_get_comments_of_tweet',
-#     caches the response, and returns it. Handles errors gracefully with error messages.
-#     """
-#     user_name = request.query_params.get("user_name")
-#     post_ids_str = request.query_params.get("post_ids")
-#     full_url = request.build_absolute_uri()
-
-#     if not user_name:
-#         return message_json_response(status.HTTP_400_BAD_REQUEST, "error", "user_name is required.")
-#     if not post_ids_str:
-#         return message_json_response(status.HTTP_400_BAD_REQUEST, "error", "post_ids parameter is required.")
-
-#     cached_response = cache.get(full_url)
-#     if cached_response:
-#         return save_data_and_return(cached_response, user_name)
-#     else:
-#         success, response = await scrap_get_comments_of_tweet(user_name, post_ids_str, 0, full_url)
-#         return save_data_and_return(response, "trending_data") if success else message_json_response(status.HTTP_400_BAD_REQUEST, "error", "Something went wrong")
 
 
 @api_view(["GET"])
